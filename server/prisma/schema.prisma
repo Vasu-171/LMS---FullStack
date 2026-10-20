@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum MaterialType {
+  VIDEO
+  PDF
+  LINK
+}
+
+enum SessionStatus {
+  WAITING
+  ACTIVE
+  FINISHED
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+
+  coursesTaught Course[]           @relation("TeacherCourses")
+  enrollments   Enrollment[]
+  progress      MaterialProgress[]
+  attempts      QuizAttempt[]
+}
+
+model Course {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  teacherId   Int
+  createdAt   DateTime @default(now())
+
+  teacher     User         @relation("TeacherCourses", fields: [teacherId], references: [id])
+  enrollments Enrollment[]
+  materials   Material[]
+  quizzes     Quiz[]
+}
+
+model Enrollment {
+  id         Int      @id @default(autoincrement())
+  studentId  Int
+  courseId   Int
+  enrolledAt DateTime @default(now())
+
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+}
+
+model Material {
+  id       Int          @id @default(autoincrement())
+  courseId Int
+  title    String
+  url      String
+  type     MaterialType @default(LINK)
+  position Int          @default(0)
+
+  course   Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress MaterialProgress[]
+}
+
+model MaterialProgress {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  materialId  Int
+  completedAt DateTime @default(now())
+
+  student  User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, materialId])
+}
+
+model Quiz {
+  id        Int      @id @default(autoincrement())
+  courseId  Int
+  title     String
+  createdAt DateTime @default(now())
+
+  course    Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  QuizAttempt[]
+  sessions  LiveSession[]
+}
+
+model Question {
+  id           Int      @id @default(autoincrement())
+  quizId       Int
+  text         String
+  options      String[]
+  correctIndex Int
+  timeLimit    Int      @default(20)
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model QuizAttempt {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  quizId    Int
+  score     Int
+  total     Int
+  takenAt   DateTime @default(now())
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model LiveSession {
+  id        Int           @id @default(autoincrement())
+  quizId    Int
+  joinCode  String        @unique
+  status    SessionStatus @default(WAITING)
+  createdAt DateTime      @default(now())
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
