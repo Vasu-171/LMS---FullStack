@@ -174,3 +174,35 @@ export async function myAttempts(req: AuthRequest, res: Response) {
     }))
   );
 }
+// =====================================================
+// TEACHER: start a live session  (POST /api/quizzes/:id/live)
+// =====================================================
+function makeJoinCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no confusing 0/O/1/I
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+export async function startLiveSession(req: AuthRequest, res: Response) {
+  const quizId = Number(req.params.id);
+
+  const quiz = await prisma.quiz.findUnique({
+    where: { id: quizId },
+    include: { course: true, _count: { select: { questions: true } } },
+  });
+  if (!quiz || quiz.course.teacherId !== req.user!.id) {
+    return res.status(403).json({ message: "This is not your quiz" });
+  }
+  if (quiz._count.questions === 0) {
+    return res.status(400).json({ message: "Quiz has no questions" });
+  }
+
+  const session = await prisma.liveSession.create({
+    data: { quizId, joinCode: makeJoinCode() },
+  });
+
+  res.status(201).json({ sessionId: session.id, joinCode: session.joinCode });
+}

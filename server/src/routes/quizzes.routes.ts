@@ -6,6 +6,7 @@ import {
   getQuiz,
   submitQuiz,
   myAttempts,
+  startLiveSession,
 } from "../controllers/quizzes.controller";
 
 const router = Router();
@@ -17,5 +18,6 @@ router.get("/courses/:courseId/quizzes", requireAuth, listQuizzes);
 router.get("/quizzes/attempts/mine", requireAuth, requireRole("STUDENT"), myAttempts);
 router.get("/quizzes/:id", requireAuth, requireRole("STUDENT"), getQuiz);
 router.post("/quizzes/:id/submit", requireAuth, requireRole("STUDENT"), submitQuiz);
+router.post("/quizzes/:id/live", requireAuth, requireRole("TEACHER"), startLiveSession);
 
 export default router;
