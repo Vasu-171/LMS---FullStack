@@ -5,6 +5,7 @@ import { prisma } from "./config/prisma";
 import authRoutes from "./routes/auth.routes";
 import courseRoutes from "./routes/courses.routes";
 import materialRoutes from "./routes/materials.routes";
+import quizRoutes from "./routes/quizzes.routes";
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api", materialRoutes);
+app.use("/api",quizRoutes);
 
 app.get("/api/health", async (_req, res) => {
   const users = await prisma.user.count();
